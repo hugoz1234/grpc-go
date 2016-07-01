@@ -49,9 +49,7 @@ import (
 	pb "google.golang.org/grpc/examples/route_guide/routeguide"
 	"google.golang.org/grpc/grpclog"
 
-	"google.golang.org/grpc/metadata"
-	"github.com/opentracing/opentracing-go"
-	"github.com/lightstep/lightstep-tracer-go"
+	"util"
 )
 
 var (
@@ -61,29 +59,13 @@ var (
 	serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name use to verify the hostname returned by TLS handshake")
 )
 
-//@param: trace; operation name ; starttime; 
-//@return: context (w/span injected into it)
-func inject(op string) (opentracing.Span,context.Context) {
-	//create span
-	span := opentracing.GlobalTracer().StartSpanWithOptions(opentracing.StartSpanOptions{
-		OperationName: op,
-	    StartTime: time.Now(),
-	})
-	span.LogEvent("printFeature_called")
-	//inject span rep into context metadata
-	values := make(map[string]string)
-	values["op"] = op
-
-	return span, metadata.NewContext(context.Background(), metadata.New(values))
-
-}
 
 // printFeature gets the feature for the given point.
 func printFeature(client pb.RouteGuideClient, point *pb.Point) {
 	grpclog.Printf("Getting feature for point (%d, %d)", point.Latitude, point.Longitude)
 
-	span, ctx := inject("printFeature")
-	defer span.FinishWithOptions(opentracing.FinishOptions{FinishTime: time.Now()})
+	span, ctx := util.Inject("printFeature")
+	defer util.FinishSpan(span)
 
 	feature, err := client.GetFeature(ctx, point)
 
@@ -186,11 +168,7 @@ func randomPoint(r *rand.Rand) *pb.Point {
 
 func main() {
 	flag.Parse()
-
-	lightstepTracer := lightstep.NewTracer(lightstep.Options{
-        AccessToken: "38500368f614ded2704772cdba398f4b",
-    })
-    opentracing.InitGlobalTracer(lightstepTracer)
+	var _ = util.Setup("38500368f614ded2704772cdba398f4b") 
 
 	var opts []grpc.DialOption
 

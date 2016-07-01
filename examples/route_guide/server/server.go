@@ -57,9 +57,7 @@ import (
 
 	pb "google.golang.org/grpc/examples/route_guide/routeguide"
 
-	"google.golang.org/grpc/metadata"
-	"github.com/opentracing/opentracing-go"
-	"github.com/lightstep/lightstep-tracer-go"
+	"util"
 )
 
 var (
@@ -249,21 +247,9 @@ func main() {
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
 
-	lightstepTracer := lightstep.NewTracer(lightstep.Options{
-	    AccessToken: "38500368f614ded2704772cdba398f4b",
-	})
-	opentracing.InitGlobalTracer(lightstepTracer)
+	var _ = util.Setup("38500368f614ded2704772cdba398f4b")
 
-	opts = append(opts, grpc.UnaryInterceptor(
-		func (ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,)(resp interface{}, err error){
-			span, err := join(ctx)
-			span.LogEvent("GetFeature_called")
-
-			defer span.FinishWithOptions(opentracing.FinishOptions{FinishTime: time.Now()})
-			ctx = opentracing.ContextWithSpan(ctx,span)
-
-			return handler(ctx,req)
-			}))
+	opts = append(opts, util.SetupServerInterceptor())
 
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterRouteGuideServer(grpcServer, newServer())
