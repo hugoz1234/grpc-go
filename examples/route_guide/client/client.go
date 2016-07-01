@@ -48,6 +48,11 @@ import (
 	"google.golang.org/grpc/credentials"
 	pb "google.golang.org/grpc/examples/route_guide/routeguide"
 	"google.golang.org/grpc/grpclog"
+
+	// "google.golang.org/grpc/metadata"
+	// "github.com/opentracing/opentracing-go"
+	// "github.com/lightstep/lightstep-tracer-go"
+	"util"
 )
 
 var (
@@ -57,13 +62,20 @@ var (
 	serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name use to verify the hostname returned by TLS handshake")
 )
 
+
 // printFeature gets the feature for the given point.
 func printFeature(client pb.RouteGuideClient, point *pb.Point) {
 	grpclog.Printf("Getting feature for point (%d, %d)", point.Latitude, point.Longitude)
-	feature, err := client.GetFeature(context.Background(), point)
+
+	span, ctx := util.Inject("printFeature")
+	defer util.FinishSpan(span)
+
+	feature, err := client.GetFeature(ctx, point)
+
 	if err != nil {
 		grpclog.Fatalf("%v.GetFeatures(_) = _, %v: ", client, err)
 	}
+
 	grpclog.Println(feature)
 }
 
@@ -156,9 +168,14 @@ func randomPoint(r *rand.Rand) *pb.Point {
 	return &pb.Point{lat, long}
 }
 
+
 func main() {
 	flag.Parse()
+
+	var _ = util.Setup("38500368f614ded2704772cdba398f4b") 
+
 	var opts []grpc.DialOption
+
 	if *tls {
 		var sn string
 		if *serverHostOverride != "" {
@@ -178,6 +195,7 @@ func main() {
 	} else {
 		opts = append(opts, grpc.WithInsecure())
 	}
+
 	conn, err := grpc.Dial(*serverAddr, opts...)
 	if err != nil {
 		grpclog.Fatalf("fail to dial: %v", err)
@@ -188,7 +206,7 @@ func main() {
 	// Looking for a valid feature
 	printFeature(client, &pb.Point{409146138, -746188906})
 
-	// Feature missing.
+	//Feature missing.
 	printFeature(client, &pb.Point{0, 0})
 
 	// Looking for features between 40, -75 and 42, -73.
