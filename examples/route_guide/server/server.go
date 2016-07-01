@@ -222,15 +222,6 @@ func newServer() *routeGuideServer {
 	return s
 }
 
-func join(ctx context.Context) (opentracing.Span, error){
-	mp, _ := metadata.FromContext(ctx)
-	span := opentracing.GlobalTracer().StartSpanWithOptions(opentracing.StartSpanOptions{
-		OperationName: mp["op"][0],
-	    StartTime: time.Now(),
-	})
-	return span, nil
-}
-
 func main() {
 	flag.Parse()
 
@@ -254,4 +245,4 @@ func main() {
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterRouteGuideServer(grpcServer, newServer())
 	grpcServer.Serve(lis)
-}
+
