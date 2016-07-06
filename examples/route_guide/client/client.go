@@ -207,15 +207,15 @@ func main() {
 	// Looking for a valid feature
 	printFeature(client, &pb.Point{409146138, -746188906})
 
-	// //Feature missing.
-	// printFeature(client, &pb.Point{0, 0})
+	//Feature missing.
+	printFeature(client, &pb.Point{0, 0})
 
-	// // Looking for features between 40, -75 and 42, -73.
-	// printFeatures(client, &pb.Rectangle{&pb.Point{400000000, -750000000}, &pb.Point{420000000, -730000000}})
+	// Looking for features between 40, -75 and 42, -73.
+	printFeatures(client, &pb.Rectangle{&pb.Point{400000000, -750000000}, &pb.Point{420000000, -730000000}})
 
-	// // RecordRoute
-	// runRecordRoute(client)
+	// RecordRoute
+	runRecordRoute(client)
 
-	// // RouteChat
-	// runRouteChat(client)
+	// RouteChat
+	runRouteChat(client)
 }

@@ -222,6 +222,7 @@ func newServer() *routeGuideServer {
 	return s
 }
 
+
 func main() {
 	flag.Parse()
 
@@ -238,11 +239,11 @@ func main() {
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
 
-	var _ = util.Setup("38500368f614ded2704772cdba398f4b")
-
-	opts = append(opts, util.SetupServerInterceptor())
+	var tracer = util.Setup("Insert LightStep Token Here")
+	opts = append(opts, util.SetupServerInterceptor(tracer))
 
 	grpcServer := grpc.NewServer(opts...)
 	pb.RegisterRouteGuideServer(grpcServer, newServer())
 	grpcServer.Serve(lis)
 
+}
