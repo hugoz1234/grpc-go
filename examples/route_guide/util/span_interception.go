@@ -2,6 +2,7 @@ package util
 
 import (
 	"time"
+	"fmt"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -10,18 +11,42 @@ import (
 	"github.com/lightstep/lightstep-tracer-go"
 )
 
-func Inject(op string) (opentracing.Span, context.Context) {
-	//create span
-	span := opentracing.GlobalTracer().StartSpanWithOptions(opentracing.StartSpanOptions{
-		OperationName: op,
+type metadataReaderWriter struct {
+	metadata.MD
+}
+
+func (w metadataReaderWriter) Set(key, val string) {
+	fmt.Println(key, " -> ", val)
+	w.MD[key] = append(w.MD[key], val)
+}
+
+func (w metadataReaderWriter) ForeachKey(handler func(key, val string) error) error {
+	for k, vals := range w.MD {
+		for _, v := range vals {
+			if dk, dv, err := metadata.DecodeKeyValue(k, v); err == nil {
+				if err = handler(dk, dv); err != nil {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func InitSpan(tracer opentracing.Tracer, ctx context.Context, operation string) (opentracing.Span, context.Context){
+	span := tracer.StartSpanWithOptions(opentracing.StartSpanOptions{
+		OperationName: operation,
 	    StartTime: time.Now(),
 	})
-	span.LogEvent("printFeature_called")
-	//inject span rep into context metadata
-	values := make(map[string]string)
-	values["op"] = op
 
-	return span, metadata.NewContext(context.Background(), metadata.New(values))
+	span.LogEvent(operation+"_called")
+	md := metadata.New(make(map[string]string))
+	//inject span rep into context 
+	tracer.Inject(span,opentracing.TextMap,metadataReaderWriter{md})
+
+	return span, metadata.NewContext(context.Background(), md)
 }
 
 func Setup(accessToken string) (opentracing.Tracer){
@@ -32,20 +57,13 @@ func Setup(accessToken string) (opentracing.Tracer){
     return lightstepTracer
 }
 
-func join(ctx context.Context) (opentracing.Span, error){
-	mp, _ := metadata.FromContext(ctx)
-	span := opentracing.GlobalTracer().StartSpanWithOptions(opentracing.StartSpanOptions{
-		OperationName: mp["op"][0],
-	    StartTime: time.Now(),
-	})
-	return span, nil
-}
-
-func SetupServerInterceptor() (grpc.ServerOption){
+func SetupServerInterceptor(tracer opentracing.Tracer) (grpc.ServerOption){
 	return grpc.UnaryInterceptor(
 		func (ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler,)(resp interface{}, err error){
-			span, err := join(ctx)
-			span.LogEvent("GetFeature_called")
+			md, _ := metadata.FromContext(ctx)			
+
+			span, err := tracer.Join(info.FullMethod,opentracing.TextMap,metadataReaderWriter{md})
+			span.LogEvent(info.FullMethod+"_called")
 
 			defer span.FinishWithOptions(opentracing.FinishOptions{FinishTime: time.Now()})
 			ctx = opentracing.ContextWithSpan(ctx,span)
@@ -57,5 +75,4 @@ func SetupServerInterceptor() (grpc.ServerOption){
 func FinishSpan(span opentracing.Span){
 	span.FinishWithOptions(opentracing.FinishOptions{FinishTime: time.Now()})
 }
-
 
