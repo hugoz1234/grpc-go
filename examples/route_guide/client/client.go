@@ -67,8 +67,8 @@ var tracer opentracing.Tracer
 func printFeature(client pb.RouteGuideClient, point *pb.Point) {
 	grpclog.Printf("Getting feature for point (%d, %d)", point.Latitude, point.Longitude)
 
-	span, ctx := util.InitSpan(tracer, context.Background(), "printFeature")
-	defer util.FinishSpan(span)
+	span, ctx := util.InitSpan(context.Background(), tracer, "printFeature")
+	defer span.Finish()
 
 	feature, err := client.GetFeature(ctx, point)
 
@@ -170,8 +170,7 @@ func randomPoint(r *rand.Rand) *pb.Point {
 
 func main() {
 	flag.Parse()
-
-	tracer = util.Setup("Insert LighStep Token Here") 
+	tracer = util.Setup("Insert Token Here") 
 
 	var opts []grpc.DialOption
 
@@ -201,8 +200,6 @@ func main() {
 	}
 	defer conn.Close()
 	client := pb.NewRouteGuideClient(conn)
-
-	/* span creation*/
 
 	// Looking for a valid feature
 	printFeature(client, &pb.Point{409146138, -746188906})

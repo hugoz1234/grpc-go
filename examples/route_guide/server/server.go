@@ -239,7 +239,7 @@ func main() {
 		opts = []grpc.ServerOption{grpc.Creds(creds)}
 	}
 
-	var tracer = util.Setup("Insert LightStep Token Here")
+	var tracer = util.Setup("Insert Token Here")
 	opts = append(opts, util.SetupServerInterceptor(tracer))
 
 	grpcServer := grpc.NewServer(opts...)
