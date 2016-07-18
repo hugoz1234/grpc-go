@@ -5,6 +5,7 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"github.com/opentracing/opentracing-go/ext"
 	"google.golang.org/grpc/metadata"
 	"github.com/opentracing/opentracing-go"
 	"google.golang.org/grpc/grpclog"
@@ -42,7 +43,7 @@ func InitSpan(ctx context.Context, tracer opentracing.Tracer, operation string) 
 		md = metadata.MD{}
 	}
 	//inject span rep into context 
-	err := tracer.Inject(span,opentracing.TextMap,metadataReaderWriter{md})
+	err := tracer.Inject(span.Context(),opentracing.TextMap,metadataReaderWriter{md})
 	if err != nil{
 		grpclog.Fatalf("Failed to cread tracer %v",err)
 	}
@@ -64,7 +65,9 @@ func SetupServerInterceptor(tracer opentracing.Tracer) (grpc.ServerOption){
 			if !ok {
 				md = metadata.MD{}
 			}	
-			span, err := tracer.Join(info.FullMethod,opentracing.TextMap,metadataReaderWriter{md})
+			sctx, err := tracer.Extract(opentracing.TextMap,metadataReaderWriter{md})
+			span := tracer.StartSpan(info.FullMethod, ext.RPCServerOption(sctx))
+
 			if err != nil {
 				grpclog.Fatalf("failed to create span %v",err)
 			}
