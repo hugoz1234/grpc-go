@@ -1,4 +1,4 @@
-package opentracing-interceptors 
+package opentracing_interceptors 
 
 import (
 	"fmt"
