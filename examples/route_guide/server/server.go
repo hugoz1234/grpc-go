@@ -68,7 +68,6 @@ var (
 	port       = flag.Int("port", 10000, "The server port")
 )
 
-
 type routeGuideServer struct {
 	savedFeatures []*pb.Feature
 	routeNotes    map[string][]*pb.RouteNote
@@ -221,7 +220,6 @@ func newServer() *routeGuideServer {
 	s.routeNotes = make(map[string][]*pb.RouteNote)
 	return s
 }
-
 
 func main() {
 	flag.Parse()

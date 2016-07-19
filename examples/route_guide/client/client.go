@@ -62,7 +62,6 @@ var (
 
 var tracer opentracing.Tracer
 
-
 // printFeature gets the feature for the given point.
 func printFeature(client pb.RouteGuideClient, point *pb.Point) {
 	grpclog.Printf("Getting feature for point (%d, %d)", point.Latitude, point.Longitude)
@@ -170,7 +169,7 @@ func randomPoint(r *rand.Rand) *pb.Point {
 
 func main() {
 	flag.Parse()
-	tracer = util.Setup("Insert Token Here") 
+	tracer = util.Setup("Insert Token Here")
 
 	var opts []grpc.DialOption
 
